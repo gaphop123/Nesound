@@ -1,0 +1,49 @@
+{
+  "name": "nesound",
+  "version": "1.1.0",
+  "description": "A tiny, dependency-free JavaScript emulation of the NES/Famicom 2A03 Audio Processing Unit (pulse x2, triangle, noise, DMC).",
+  "main": "NESound.js",
+  "module": "NESound.js",
+  "types": "NESound.d.ts",
+  "unpkg": "dist/NESound.min.js",
+  "jsdelivr": "dist/NESound.min.js",
+  "files": [
+    "NESound.js",
+    "NESound.d.ts",
+    "dist/NESound.min.js",
+    "example.html",
+    "README.md",
+    "LICENSE"
+  ],
+  "scripts": {
+    "build": "terser NESound.js -c -m --comments \"/^!/\" -o dist/NESound.min.js",
+    "test": "node test/smoke-test.js"
+  },
+  "keywords": [
+    "nes",
+    "famicom",
+    "2a03",
+    "apu",
+    "chiptune",
+    "audio",
+    "emulator",
+    "emulation",
+    "nsf",
+    "web-audio",
+    "retro",
+    "8-bit"
+  ],
+  "author": "Gaphop",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/gaphop123/Nesound.git"
+  },
+  "bugs": {
+    "url": "https://github.com/gaphop123/Nesound/issues"
+  },
+  "homepage": "https://github.com/gaphop123/Nesound#readme",
+  "devDependencies": {
+    "terser": "^5.0.0"
+  }
+}

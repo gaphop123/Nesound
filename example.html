@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>NESound - demo</title>
+<style>
+  body { background:#0a0a0a; color:#33ff00; font-family: monospace; padding: 2rem; }
+  button { background:#111; color:#33ff00; border:1px solid #33ff00; padding:0.6rem 1.2rem; font-family: monospace; cursor:pointer; margin-right: .5rem; }
+  button:hover { background:#1a3300; }
+  h1 { text-shadow: 0 0 6px rgba(51,255,0,.6); }
+  code { color:#9f9; }
+</style>
+</head>
+<body>
+  <h1>NESound.js demo</h1>
+  <p>Plays a simple arpeggio on Pulse 1 + a bass note on Triangle, straight from 2A03 register writes.</p>
+  <button id="play">Play arpeggio</button>
+  <button id="stop">Silence</button>
+
+  <script src="NESound.js"></script>
+  <script>
+    let audioCtx, apu, node, timer;
+
+    function ensureAudio() {
+      if (audioCtx) return;
+      audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+      apu = new NESound({ sampleRate: audioCtx.sampleRate });
+      node = apu.createAudioNode(audioCtx, 2048);
+      node.connect(audioCtx.destination);
+    }
+
+    // Convert a note frequency (Hz) to the 11-bit NES timer period for a
+    // pulse/triangle channel: period = cpuClock / (16 * freq) - 1 (pulse)
+    function pulsePeriod(freq) {
+      return Math.round(NESound.CPU_CLOCK_NTSC / (16 * freq)) - 1;
+    }
+    function trianglePeriod(freq) {
+      return Math.round(NESound.CPU_CLOCK_NTSC / (32 * freq)) - 1;
+    }
+
+    function writePeriod(baseAddrLo, baseAddrHi, period, restart) {
+      apu.write(baseAddrLo, period & 0xFF);
+      // top bits + length counter load (also restarts envelope/sequence)
+      apu.write(baseAddrHi, ((period >> 8) & 7) | (restart ? (0x01 << 3) : 0));
+    }
+
+    document.getElementById('play').addEventListener('click', () => {
+      ensureAudio();
+      audioCtx.resume();
+
+      // Enable pulse1 + triangle.
+      apu.write(0x4015, 0x05);
+
+      // Triangle: continuous bass note (A2 ~ 110Hz).
+      apu.write(0x4008, 0x81);           // control=1 (won't be gated by length), linear period
+      writePeriod(0x400A, 0x400B, trianglePeriod(110), true);
+
+      // Pulse 1: duty 2 (50%), constant volume 12.
+      apu.write(0x4000, 0b10001100);
+
+      const notes = [440.00, 523.25, 659.25, 783.99, 659.25, 523.25]; // A4 C5 E5 G5 E5 C5
+      let i = 0;
+      clearInterval(timer);
+      timer = setInterval(() => {
+        const period = pulsePeriod(notes[i % notes.length]);
+        writePeriod(0x4002, 0x4003, period, true);
+        i++;
+      }, 180);
+    });
+
+    document.getElementById('stop').addEventListener('click', () => {
+      clearInterval(timer);
+      if (apu) apu.write(0x4015, 0x00); // disable all channels
+    });
+  </script>
+</body>
+</html>
